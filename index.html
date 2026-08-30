@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>⚔️ Batalha Naval da Vida</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: #0a0a1a;
+            font-family: Arial, sans-serif;
+            color: white;
+            padding: 10px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        #app {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        /* CABEÇALHO */
+        .header {
+            text-align: center;
+            padding: 15px 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #ffd700;
+        }
+        
+        .header h1 {
+            font-size: 22px;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .header p {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+        
+        /* PLACAR */
+        .placar {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            background: #1a1a2e;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #333;
+        }
+        
+        .jogador-info {
+            text-align: center;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .jogador-info.ativo {
+            background: rgba(255, 215, 0, 0.15);
+            border: 2px solid #ffd700;
+        }
+        
+        .jogador-info h3 {
+            font-size: 14px;
+            color: #e0e0e0;
+        }
+        
+        .jogador-info .pontos {
+            font-size: 28px;
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+        
+        .jogador-info .turno-indicador {
+            font-size: 11px;
+            color: #ffd700;
+        }
+        
+        .vs-div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #e94560;
+            padding: 0 10px;
+        }
+        
+        /* TABULEIROS */
+        .tabuleiros {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .tabuleiro-container {
+            background: #16213e;
+            padding: 10px;
+            border-radius: 12px;
+            border: 3px solid #333;
+            transition: all 0.3s;
+        }
+        
+        .tabuleiro-container.defesa-ativa {
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+        }
+        
+        .tabuleiro-container h4 {
+            text-align: center;
+            font-size: 12px;
+            color: #e0e0e0;
+            margin-bottom: 8px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 30px repeat(7, 1fr);
+            gap: 3px;
+            justify-content: center;
+        }
+        
+        .grid-header {
+            background: #e94560;
+            color: white;
+            padding: 4px 2px;
+            border-radius: 4px;
+            font-size: 7px;
+            font-weight: bold;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .grid-row-header {
+            background: #0f3460;
+            color: #e0e0e0;
+            padding: 2px;
+            border-radius: 4px;
+            font-size: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            word-break: break-all;
+            line-height: 1.1;
+        }
+        
+        .cell {
+            aspect-ratio: 1;
+            background: #1a1a40;
+            border-radius: 4px;
+            border: 1px solid #0f3460;
+            color: white;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            touch-action: manipulation;
+            min-height: 30px;
+        }
+        
+        .cell:active {
+            transform: scale(0.92);
+        }
+        
+        .cell.revelado-acerto {
+            background: #00d2ff;
+            border-color: #00d2ff;
+        }
+        
+        .cell.revelado-erro {
+            background: #2d2d44;
+            border-color: #2d2d44;
+        }
+        
+        .cell.escondido {
+            background: #1a1a40;
+        }
+        
+        .cell.escondido:hover {
+            background: #2a2a5a;
+        }
+        
+        .cell.ativo {
+            border-color: #e94560;
+        }
+        
+        /* BOTÕES */
+        .botoes {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            touch-action: manipulation;
+            flex: 1;
+            min-width: 120px;
+            max-width: 200px;
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-primary {
+            background: #e94560;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #c73652;
+        }
+        
+        .btn-secondary {
+            background: #0f3460;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #1a4a8a;
+        }
+        
+        .btn-gold {
+            background: #ffd700;
+            color: #0a0a1a;
+        }
+        
+        .btn-gold:hover {
+            background: #e6c200;
+        }
+        
+        /* ALERTA PERSONALIZADO */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal-overlay.ativo {
+            display: flex;
+        }
+        
+        .modal {
+            background: #1a1a2e;
+            padding: 25px;
+            border-radius: 16px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            border: 2px solid #ffd700;
+            animation: slideUp 0.3s;
+        }
+        
+        .modal h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .modal p {
+            color: #ccc;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .modal .btn {
+            width: 100%;
+            max-width: 100%;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* RESPONSIVO */
+        @media (max-width: 600px) {
+            .grid {
+                grid-template-columns: 22px repeat(7, 1fr);
+                gap: 2px;
+            }
+            
+            .grid-header {
+                font-size: 5px;
+                padding: 2px 1px;
+            }
+            
+            .grid-row-header {
+                font-size: 5px;
+                padding: 1px;
+            }
+            
+            .cell {
+                font-size: 10px;
+                min-height: 22px;
+            }
+            
+            .header h1 {
+                font-size: 17px;
+            }
+            
+            .jogador-info .pontos {
+                font-size: 20px;
+            }
+            
+            .tabuleiro-container {
+                padding: 6px;
+            }
+            
+            .tabuleiros {
+                gap: 6px;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .grid {
+                grid-template-columns: 18px repeat(7, 1fr);
+                gap: 1.5px;
+            }
+            
+            .grid-header {
+                font-size: 4px;
+                padding: 1px;
+            }
+            
+            .grid-row-header {
+                font-size: 4px;
+            }
+            
+            .cell {
+                font-size: 8px;
+                min-height: 18px;
+                border-radius: 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <!-- MODAL DE ALERTA -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <h2 id="modal-title">🎯</h2>
+            <p id="modal-message">Mensagem</p>
+            <button class="btn btn-gold" onclick="fecharModal()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIGURAÇÃO =====
+        const colunas = ['Fin', 'Sau', 'Soc', 'Men', 'Tra', 'Fam', 'Esp'];
+        const colunasCompletas = ['💰 Finanças', '❤️ Saúde', '👥 Social', '🧠 Mental', '💼 Trabalho', '🏠 Família', '🌱 Espírito'];
+        const linhas = ['Dívidas', 'Doença', 'Solidão', 'Ansiedade', 'Estagnação', 'Conflitos', 'Vazio'];
+
+        // ===== ESTADO DO JOGO =====
+        let estado = {
+            jogador1: {
+                nome: 'Jogador 1',
+                tabuleiro: [],
+                pontos: 0,
+                turno: true
+            },
+            jogador2: {
+                nome: 'Jogador 2',
+                tabuleiro: [],
+                pontos: 0,
+                turno: false
+            },
+            turnoAtual: 1,
+            jogoAtivo: true,
+            vencedor: null
+        };
+
+        // ===== CRIA TABULEIRO =====
+        function criarTabuleiro(jogador) {
+            const tab = [];
+            for (let l = 0; l < 7; l++) {
+                const linha = [];
+                for (let c = 0; c < 7; c++) {
+                    const temProblema = Math.random() < 0.25;
+                    linha.push({
+                        coluna: colunasCompletas[c],
+                        linha: linhas[l],
+                        problema: temProblema ? `${linhas[l]} em ${colunasCompletas[c]}` : null,
+                        ativo: temProblema,
+                        revelado: false,
+                        dono: jogador
+                    });
+                }
+                tab.push(linha);
+            }
+            return tab;
+        }
+
+        // ===== INICIALIZA JOGO =====
+        function iniciarJogo() {
+            estado.jogador1.tabuleiro = criarTabuleiro('Jogador 1');
+            estado.jogador2.tabuleiro = criarTabuleiro('Jogador 2');
+            estado.jogador1.pontos = 0;
+            estado.jogador2.pontos = 0;
+            estado.jogador1.turno = true;
+            estado.jogador2.turno = false;
+            estado.turnoAtual = 1;
+            estado.jogoAtivo = true;
+            estado.vencedor = null;
+            renderizar();
+        }
+
+        // ===== MOSTRA ALERTA =====
+        function mostrarAlerta(titulo, mensagem) {
+            document.getElementById('modal-title').textContent = titulo;
+            document.getElementById('modal-message').textContent = mensagem;
+            document.getElementById('modal').classList.add('ativo');
+        }
+
+        function fecharModal() {
+            document.getElementById('modal').classList.remove('ativo');
+        }
+
+        // ===== AÇÃO DE ATAQUE =====
+        function atacar(jogadorAtacanteNum, linha, coluna) {
+            if (!estado.jogoAtivo) {
+                mostrarAlerta('🏁', 'O jogo já acabou! Clique em "Novo Duelo" para recomeçar.');
+                return;
+            }
+
+            if (jogadorAtacanteNum !== estado.turnoAtual) {
+                mostrarAlerta('⏳', `Aguarde! É a vez do Jogador ${estado.turnoAtual}`);
+                return;
+            }
+
+            const defensorNum = jogadorAtacanteNum === 1 ? 2 : 1;
+            const defensor = defensorNum === 1 ? estado.jogador1 : estado.jogador2;
+            const atacante = jogadorAtacanteNum === 1 ? estado.jogador1 : estado.jogador2;
+            
+            const celula = defensor.tabuleiro[linha][coluna];
+            
+            if (celula.revelado) {
+                mostrarAlerta('⏳', 'Essa posição já foi atacada!');
+                return;
+            }
+
+            celula.revelado = true;
+            
+            if (celula.ativo) {
+                atacante.pontos += 10;
+                mostrarAlerta('🎯 ACERTOU!', `${atacante.nome} resolveu: ${celula.problema}`);
+                
+                // Verifica se o defensor perdeu todos os problemas
+                const todosRevelados = defensor.tabuleiro.every(lin => 
+                    lin.every(cel => !cel.ativo || cel.revelado)
+                );
+                
+                if (todosRevelados) {
+                    estado.jogoAtivo = false;
+                    estado.vencedor = atacante.nome;
+                    mostrarAlerta('🏆 VITÓRIA!', `${atacante.nome} VENCEU O DUELO!`);
+                }
+            } else {
+                mostrarAlerta('💨 ÁGUA!', `${atacante.nome} errou o alvo.`);
+            }
+            
+            // Alterna turno
+            if (estado.jogoAtivo) {
+                estado.turnoAtual = estado.turnoAtual === 1 ? 2 : 1;
+                estado.jogador1.turno = estado.turnoAtual === 1;
+                estado.jogador2.turno = estado.turnoAtual === 2;
+            }
+            
+            renderizar();
+        }
+
+        // ===== RENDERIZA O JOGO =====
+        function renderizar() {
+            const app = document.getElementById('app');
+            app.innerHTML = '';
+
+            // CABEÇALHO
+            const header = document.createElement('div');
+            header.className = 'header';
+            header.innerHTML = `
+                <h1>⚔️ Batalha Naval da Vida</h1>
+                <p>Resolva problemas do oponente e vença o duelo!</p>
+            `;
+            app.appendChild(header);
+
+            // PLACAR
+            const placar = document.createElement('div');
+            placar.className = 'placar';
+            placar.innerHTML = `
+                <div class="jogador-info ${estado.jogador1.turno ? 'ativo' : ''}">
+                    <h3>${estado.jogador1.nome}</h3>
+                    <div class="pontos">⭐ ${estado.jogador1.pontos}</div>
+                    ${estado.jogador1.turno ? '<div class="turno-indicador">👈 ATUAL</div>' : ''}
+                </div>
+                <div class="vs-div">⚔️</div>
+                <div class="jogador-info ${estado.jogador2.turno ? 'ativo' : ''}">
+                    <h3>${estado.jogador2.nome}</h3>
+                    <div class="pontos">⭐ ${estado.jogador2.pontos}</div>
+                    ${estado.jogador2.turno ? '<div class="turno-indicador">👈 ATUAL</div>' : ''}
+                </div>
+            `;
+            app.appendChild(placar);
+
+            // TABULEIROS
+            const tabuleiros = document.createElement('div');
+            tabuleiros.className = 'tabuleiros';
+            
+            // Criar tabuleiro do Jogador 1
+            const tab1 = criarTabuleiroVisual(estado.jogador1, 1);
+            tabuleiros.appendChild(tab1);
+            
+            // Criar tabuleiro do Jogador 2
+            const tab2 = criarTabuleiroVisual(estado.jogador2, 2);
+            tabuleiros.appendChild(tab2);
+            
+            app.appendChild(tabuleiros);
+
+            // BOTÕES
+            const botoes = document.createElement('div');
+            botoes.className = 'botoes';
+            botoes.innerHTML = `
+                <button class="btn btn-primary" onclick="reiniciarJogo()">🔄 Novo Duelo</button>
+                <button class="btn btn-secondary" onclick="mostrarRegras()">📖 Regras</button>
+            `;
+            app.appendChild(botoes);
+        }
+
+        // ===== CRIA TABULEIRO VISUAL =====
+        function criarTabuleiroVisual(jogador, numero) {
+            const container = document.createElement('div');
+            container.className = 'tabuleiro-container';
+            
+            // Destaca se é a defesa do turno atual
+            const defensorNum = estado.turnoAtual === 1 ? 2 : 1;
+            if (numero === defensorNum && estado.jogoAtivo) {
+                container.classList.add('defesa-ativa');
+            }
+            
+            container.innerHTML = `<h4>🎯 ${jogador.nome}</h4>`;
+            
+            const grid = document.createElement('div');
+            grid.className = 'grid';
+
+            // Cabeçalho
+            const emptyHeader = document.createElement('div');
+            emptyHeader.className = 'grid-header';
+            emptyHeader.style.background = 'transparent';
+            emptyHeader.style.border = 'none';
+            grid.appendChild(emptyHeader);
+
+            colunas.forEach(col => {
+                const header = document.createElement('div');
+                header.className = 'grid-header';
+                header.textContent = col;
+                grid.appendChild(header);
+            });
+
+            // Linhas
+            for (let l = 0; l < 7; l++) {
+                const rowHeader = document.createElement('div');
+                rowHeader.className = 'grid-row-header';
+                rowHeader.textContent = linhas[l];
+                grid.appendChild(rowHeader);
+
+                for (let c = 0; c < 7; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    const celula = jogador.tabuleiro[l][c];
+                    
+                    if (celula.revelado) {
+                        if (celula.ativo) {
+                            cell.classList.add('revelado-acerto');
+                            cell.textContent = '✅';
+                        } else {
+                            cell.classList.add('revelado-erro');
+                            cell.textContent = '💨';
+                        }
+                    } else {
+                        cell.classList.add('escondido');
+                        cell.textContent = '❓';
+                    }
+                    
+                    // Ação de clique
+                    cell.onclick = () => {
+                        const atacanteNum = estado.turnoAtual;
+                        const defensorNum = atacanteNum === 1 ? 2 : 1;
+                        
+                        // Verifica se é o tabuleiro do oponente
+                        if (atacanteNum === numero) {
+                            mostrarAlerta('⛔', 'Você não pode atacar seu próprio tabuleiro!');
+                            return;
+                        }
+                        
+                        atacar(atacanteNum, l, c);
+                    };
+                    
+                    // Touch para mobile
+                    cell.ontouchstart = (e) => {
+                        e.preventDefault();
+                        cell.onclick();
+                    };
+                    
+                    grid.appendChild(cell);
+                }
+            }
+
+            container.appendChild(grid);
+            return container;
+        }
+
+        // ===== REINICIAR JOGO =====
+        function reiniciarJogo() {
+            if (confirm('Deseja realmente reiniciar o jogo?')) {
+                iniciarJogo();
+            }
+        }
+
+        // ===== MOSTRAR REGRAS =====
+        function mostrarRegras() {
+            mostrarAlerta('📖 REGRAS', 
+                '⚔️ Dois jogadores duelam!\n\n' +
+                '🎯 Cada jogador tem 10 problemas escondidos\n' +
+                '🔄 Alternem turnos para atacar o oponente\n' +
+                '✅ Acertou um problema? +10 pontos!\n' +
+                '💨 Errou? Perde a vez!\n' +
+                '🏆 Quem resolver todos os problemas do oponente VENCE!'
+            );
+        }
+
+        // ===== INICIA O JOGO =====
+        iniciarJogo();
+        
+        // ===== REGISTRA SERVICE WORKER =====
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(() => console.log('📱 App instalável!'))
+                .catch(() => console.log('⚠️ Service Worker não registrado'));
+        }
+    </script>
+</body>
+</html>
